@@ -1,26 +1,26 @@
 """
-OpenAI/ChatGPT Integration Service
-Primary intelligence source for brand mentions and citations
+Google Gemini Integration Service
+Third AI platform for comprehensive brand monitoring
 """
 import asyncio
 from typing import List, Dict, Optional, Any
-import openai
+import google.generativeai as genai
 from datetime import datetime, timedelta
 import logging
 from dataclasses import dataclass
+import json
 
 from app.config import settings
 from app.models.query import QueryResult
 from app.models.citation import Citation
 from app.database import db_manager
-from app.services.nlp_citation_extractor import nlp_citation_extractor
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ChatGPTResponse:
-    """Structure for ChatGPT API responses"""
+class GeminiResponse:
+    """Structure for Gemini API responses"""
     query: str
     response: str
     model: str
@@ -41,94 +41,118 @@ class BrandMention:
     prominence_score: Optional[float]
 
 
-class OpenAIService:
+class GoogleGeminiService:
     """
-    Service for interacting with OpenAI API and extracting brand mentions
-    Based on Reddit intelligence: Primary source for ChatGPT citations
+    Service for interacting with Google Gemini API and extracting brand mentions
+    Third AI platform for comprehensive brand monitoring coverage
     """
     
     def __init__(self):
-        # Initialize OpenAI client
-        openai.api_key = settings.openai_api_key
-        self.client = openai.AsyncOpenAI(api_key=settings.openai_api_key)
+        # Configure Gemini API
+        genai.configure(api_key=settings.google_api_key)
+        self.model = genai.GenerativeModel('gemini-pro')
         
         # Rate limiting settings
         self.rate_limit = {
             'requests_per_minute': 60,
-            'requests_per_hour': 3500,
-            'tokens_per_minute': 150000
+            'requests_per_hour': 1000,
+            'tokens_per_minute': 32000
         }
         
-        # Query templates based on Reddit intelligence
+        # Query templates optimized for Gemini's response style
         self.query_templates = {
             'recommendation': [
-                "What are the best {category} tools for {use_case}?",
-                "Recommend {category} software for {industry}",
-                "What {category} solution should I use for {problem}?",
-                "Compare {category} options for {use_case}",
-                "Which {category} tools do you recommend for {scenario}?"
+                "What are the top {category} solutions for {use_case}? Please provide detailed recommendations.",
+                "I need {category} software for {industry}. What would you suggest and why?",
+                "Help me choose the best {category} tool for {problem}. What are the key options?",
+                "What {category} platforms would you recommend for {scenario}? Explain your reasoning.",
+                "List and compare the leading {category} solutions for {use_case}."
             ],
             'comparison': [
-                "Compare {brand} vs {competitor}",
-                "{brand} vs {competitor} - which is better?",
-                "What's the difference between {brand} and {competitor}?",
-                "{brand} or {competitor} for {use_case}?",
-                "Should I choose {brand} or {competitor}?"
+                "Compare {brand} and {competitor} for {use_case}. What are the key differences?",
+                "Which is better for {use_case}: {brand} or {competitor}? Explain your analysis.",
+                "Analyze {brand} vs {competitor} - strengths, weaknesses, and best use cases.",
+                "How do {brand} and {competitor} stack up against each other?",
+                "Provide a detailed comparison of {brand} and {competitor} for {use_case}."
             ],
             'specific_inquiry': [
-                "Tell me about {brand}",
-                "What is {brand} used for?",
-                "How does {brand} work?",
-                "What are the pros and cons of {brand}?",
-                "Is {brand} worth it?"
+                "Provide a comprehensive overview of {brand} - features, benefits, and use cases.",
+                "What makes {brand} unique in the market? Analyze its key differentiators.",
+                "Explain {brand}'s capabilities and how it compares to alternatives.",
+                "Is {brand} a good solution? Analyze its pros and cons thoroughly.",
+                "Break down {brand}'s value proposition and target market."
             ],
             'problem_solving': [
-                "How to solve {problem} with {category} tools?",
-                "Best way to {task} using {category} software?",
-                "What's the most effective {category} solution for {problem}?",
-                "I need to {task}, what {category} tool should I use?"
+                "I need to solve {problem} in {industry}. What {category} tools can help?",
+                "What's the most effective way to {task} using {category} technology?",
+                "How can {category} solutions address {problem}? Recommend specific tools.",
+                "What {category} approach would work best for {problem}? Provide detailed guidance."
+            ],
+            'market_analysis': [
+                "What are the current trends in {category} for {industry}?",
+                "Analyze the {category} market landscape and key players.",
+                "What's driving innovation in {category} solutions?",
+                "How is the {category} market evolving? Identify key trends and leaders."
+            ],
+            'use_case_specific': [
+                "For {use_case}, what are the most important {category} features to consider?",
+                "How do different {category} solutions handle {use_case}?",
+                "What {category} capabilities are essential for {use_case}?",
+                "Compare how leading {category} platforms approach {use_case}."
             ]
         }
     
-    async def query_chatgpt(self, query: str, model: str = "gpt-4") -> ChatGPTResponse:
+    async def query_gemini(self, query: str, model: str = "gemini-pro") -> GeminiResponse:
         """
-        Send query to ChatGPT and get response
+        Send query to Gemini and get response
         """
         try:
-            response = await self.client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant providing informative recommendations and comparisons."},
-                    {"role": "user", "content": query}
-                ],
+            # Configure generation settings
+            generation_config = genai.types.GenerationConfig(
                 temperature=0.7,
-                max_tokens=1000,
-                top_p=1.0,
-                frequency_penalty=0.0,
-                presence_penalty=0.0
+                top_p=0.8,
+                top_k=40,
+                max_output_tokens=2048,
             )
             
-            return ChatGPTResponse(
+            # Generate response
+            response = self.model.generate_content(
+                query,
+                generation_config=generation_config,
+                safety_settings={
+                    genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                    genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: genai.types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                    genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                    genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                }
+            )
+            
+            return GeminiResponse(
                 query=query,
-                response=response.choices[0].message.content,
+                response=response.text,
                 model=model,
                 timestamp=datetime.utcnow(),
                 metadata={
-                    'tokens_used': response.usage.total_tokens,
-                    'prompt_tokens': response.usage.prompt_tokens,
-                    'completion_tokens': response.usage.completion_tokens,
-                    'finish_reason': response.choices[0].finish_reason
+                    'finish_reason': str(response.candidates[0].finish_reason),
+                    'safety_ratings': [
+                        {
+                            'category': str(rating.category),
+                            'probability': str(rating.probability)
+                        }
+                        for rating in response.candidates[0].safety_ratings
+                    ],
+                    'model': model
                 }
             )
             
         except Exception as e:
-            logger.error(f"Error querying ChatGPT: {e}")
+            logger.error(f"Error querying Gemini: {e}")
             raise
     
-    async def extract_brand_mentions(self, response: ChatGPTResponse, brands: List[str]) -> List[BrandMention]:
+    async def extract_brand_mentions(self, response: GeminiResponse, brands: List[str]) -> List[BrandMention]:
         """
-        Extract brand mentions from ChatGPT response
-        Based on Reddit intelligence: Track mentions, position, and context
+        Extract brand mentions from Gemini response
+        Optimized for Gemini's structured response patterns
         """
         mentions = []
         response_text = response.response.lower()
@@ -151,8 +175,8 @@ class OpenAIService:
                 # Analyze each mention
                 for i, pos in enumerate(positions):
                     # Extract context around mention
-                    context_start = max(0, pos - 100)
-                    context_end = min(len(response_text), pos + 100)
+                    context_start = max(0, pos - 200)
+                    context_end = min(len(response_text), pos + 200)
                     context = response.response[context_start:context_end]
                     
                     # Extract full sentence containing mention
@@ -209,45 +233,68 @@ class OpenAIService:
     
     def _calculate_confidence(self, context: str, brand: str) -> float:
         """Calculate confidence score for brand mention"""
-        # Simple heuristic - can be improved with ML
         confidence = 0.5
         
-        # Higher confidence if brand is mentioned with specific context
-        if any(word in context.lower() for word in ['recommend', 'best', 'good', 'excellent']):
+        # Higher confidence for structured recommendations
+        if any(word in context.lower() for word in ['recommended', 'top choice', 'leading', 'best', 'preferred']):
+            confidence += 0.25
+        
+        # Higher confidence for detailed analysis
+        if any(word in context.lower() for word in ['analysis', 'comparison', 'evaluation', 'assessment']):
             confidence += 0.2
         
-        # Higher confidence if brand is mentioned in comparison
-        if any(word in context.lower() for word in ['vs', 'versus', 'compared to', 'better than']):
+        # Higher confidence for specific features/benefits
+        if any(word in context.lower() for word in ['features', 'benefits', 'capabilities', 'advantages']):
+            confidence += 0.15
+        
+        # Gemini provides structured responses, so look for listing patterns
+        if any(pattern in context.lower() for pattern in ['1.', '2.', '•', '*', '-']):
             confidence += 0.1
         
-        # Higher confidence if brand is mentioned with features
-        if any(word in context.lower() for word in ['features', 'capabilities', 'offers', 'provides']):
-            confidence += 0.1
+        # Higher confidence for comparative statements
+        if any(word in context.lower() for word in ['compared to', 'versus', 'against', 'alternative']):
+            confidence += 0.15
         
         return min(confidence, 1.0)
     
     async def _analyze_sentiment(self, sentence: str) -> Optional[float]:
-        """Analyze sentiment of mention (simple implementation)"""
-        # Simple sentiment analysis - can be improved with proper NLP
-        positive_words = ['good', 'great', 'excellent', 'best', 'recommend', 'love', 'amazing', 'perfect']
-        negative_words = ['bad', 'terrible', 'worst', 'awful', 'hate', 'disappointing', 'poor']
+        """Analyze sentiment of mention with Gemini-specific patterns"""
+        # Gemini tends to be analytical and structured
+        highly_positive = ['excellent', 'outstanding', 'superior', 'leading', 'top-tier', 'industry-leading']
+        positive_words = ['good', 'effective', 'solid', 'reliable', 'recommended', 'preferred', 'strong']
+        neutral_words = ['available', 'option', 'alternative', 'standard', 'typical', 'common']
+        negative_words = ['limited', 'lacking', 'weak', 'challenges', 'issues', 'problems']
+        highly_negative = ['poor', 'inadequate', 'problematic', 'disappointing', 'insufficient']
         
         sentence_lower = sentence.lower()
         
-        positive_count = sum(1 for word in positive_words if word in sentence_lower)
-        negative_count = sum(1 for word in negative_words if word in sentence_lower)
+        # Check for highly positive indicators
+        if any(word in sentence_lower for word in highly_positive):
+            return 0.9
         
-        if positive_count > negative_count:
-            return 0.5 + (positive_count - negative_count) * 0.1
-        elif negative_count > positive_count:
-            return 0.5 - (negative_count - positive_count) * 0.1
-        else:
-            return 0.0  # Neutral
+        # Check for positive indicators
+        positive_count = sum(1 for word in positive_words if word in sentence_lower)
+        if positive_count > 0:
+            return 0.7 + (positive_count * 0.05)
+        
+        # Check for highly negative indicators
+        if any(word in sentence_lower for word in highly_negative):
+            return 0.1
+        
+        # Check for negative indicators
+        negative_count = sum(1 for word in negative_words if word in sentence_lower)
+        if negative_count > 0:
+            return 0.3 - (negative_count * 0.05)
+        
+        # Check for neutral indicators
+        if any(word in sentence_lower for word in neutral_words):
+            return 0.5
+        
+        return 0.5  # Default neutral
     
     async def generate_monitoring_queries(self, brand_name: str, category: str, competitors: List[str]) -> List[str]:
         """
-        Generate monitoring queries based on Reddit intelligence
-        Focus on scenarios where brands are typically mentioned
+        Generate monitoring queries optimized for Gemini's analytical style
         """
         queries = []
         
@@ -255,10 +302,10 @@ class OpenAIService:
         for template in self.query_templates['recommendation']:
             queries.append(template.format(
                 category=category,
-                use_case=f"{category} for business",
-                industry="B2B",
-                problem=f"choosing {category} software",
-                scenario=f"enterprise {category}"
+                use_case=f"enterprise {category}",
+                industry="B2B technology",
+                problem=f"choosing {category} solution",
+                scenario=f"business {category} implementation"
             ))
         
         # Comparison queries with competitors
@@ -267,7 +314,7 @@ class OpenAIService:
                 queries.append(template.format(
                     brand=brand_name,
                     competitor=competitor,
-                    use_case=f"{category} implementation"
+                    use_case=f"{category} solution"
                 ))
         
         # Specific brand inquiry
@@ -277,8 +324,23 @@ class OpenAIService:
         # Problem-solving queries
         for template in self.query_templates['problem_solving']:
             queries.append(template.format(
-                problem=f"improving {category} processes",
-                task=f"implement {category} solution",
+                problem=f"optimizing {category} workflow",
+                task=f"streamline {category} processes",
+                category=category,
+                industry="technology"
+            ))
+        
+        # Market analysis queries
+        for template in self.query_templates['market_analysis']:
+            queries.append(template.format(
+                category=category,
+                industry="technology"
+            ))
+        
+        # Use case specific queries
+        for template in self.query_templates['use_case_specific']:
+            queries.append(template.format(
+                use_case=f"enterprise {category}",
                 category=category
             ))
         
@@ -286,18 +348,18 @@ class OpenAIService:
     
     async def run_monitoring_session(self, user_id: str, brand_names: List[str], category: str, competitors: List[str] = None) -> Dict[str, Any]:
         """
-        Run a complete monitoring session for brands
-        Based on Reddit intelligence: Comprehensive query approach
+        Run a complete monitoring session for brands using Gemini
         """
         competitors = competitors or []
         results = {
-            'session_id': f"session_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+            'session_id': f"gemini_session_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
             'user_id': user_id,
             'brands': brand_names,
             'queries_executed': 0,
             'total_mentions': 0,
             'brand_results': {},
-            'session_start': datetime.utcnow()
+            'session_start': datetime.utcnow(),
+            'platform': 'google_gemini'
         }
         
         try:
@@ -308,16 +370,16 @@ class OpenAIService:
                 competitors
             )
             
-            logger.info(f"Generated {len(queries)} monitoring queries for user {user_id}")
+            logger.info(f"Generated {len(queries)} Gemini monitoring queries for user {user_id}")
             
             # Execute queries with rate limiting
             for query in queries:
                 try:
-                    # Rate limiting
-                    await asyncio.sleep(1.0)  # Simple rate limiting
+                    # Rate limiting for Gemini
+                    await asyncio.sleep(2.0)  # Conservative rate limiting
                     
-                    # Query ChatGPT
-                    response = await self.query_chatgpt(query)
+                    # Query Gemini
+                    response = await self.query_gemini(query)
                     
                     # Extract mentions
                     mentions = await self.extract_brand_mentions(response, brand_names)
@@ -335,7 +397,8 @@ class OpenAIService:
                                 'total_mentions': 0,
                                 'avg_position': 0,
                                 'avg_sentiment': 0,
-                                'avg_prominence': 0
+                                'avg_prominence': 0,
+                                'avg_confidence': 0
                             }
                         
                         if mention.mentioned:
@@ -345,11 +408,13 @@ class OpenAIService:
                                 brand_result['avg_sentiment'] += mention.sentiment_score
                             if mention.prominence_score:
                                 brand_result['avg_prominence'] += mention.prominence_score
+                            if mention.confidence_score:
+                                brand_result['avg_confidence'] += mention.confidence_score
                     
-                    logger.info(f"Processed query: {query[:50]}... - Found {len([m for m in mentions if m.mentioned])} mentions")
+                    logger.info(f"Processed Gemini query: {query[:50]}... - Found {len([m for m in mentions if m.mentioned])} mentions")
                     
                 except Exception as e:
-                    logger.error(f"Error processing query '{query}': {e}")
+                    logger.error(f"Error processing Gemini query '{query}': {e}")
                     continue
             
             # Calculate averages
@@ -357,19 +422,20 @@ class OpenAIService:
                 if brand_result['total_mentions'] > 0:
                     brand_result['avg_sentiment'] /= brand_result['total_mentions']
                     brand_result['avg_prominence'] /= brand_result['total_mentions']
+                    brand_result['avg_confidence'] /= brand_result['total_mentions']
             
             results['session_end'] = datetime.utcnow()
             results['duration_minutes'] = (results['session_end'] - results['session_start']).total_seconds() / 60
             
-            logger.info(f"Monitoring session completed for user {user_id}: {results['queries_executed']} queries, {results['total_mentions']} mentions")
+            logger.info(f"Gemini monitoring session completed for user {user_id}: {results['queries_executed']} queries, {results['total_mentions']} mentions")
             
             return results
             
         except Exception as e:
-            logger.error(f"Error in monitoring session for user {user_id}: {e}")
+            logger.error(f"Error in Gemini monitoring session for user {user_id}: {e}")
             raise
     
-    async def _store_query_result(self, user_id: str, query: str, response: ChatGPTResponse, mentions: List[BrandMention]):
+    async def _store_query_result(self, user_id: str, query: str, response: GeminiResponse, mentions: List[BrandMention]):
         """Store query result and citations in database"""
         try:
             # Store query result
@@ -382,7 +448,7 @@ class OpenAIService:
                 {
                     "user_id": user_id,
                     "query_text": query,
-                    "platform": "openai",
+                    "platform": "google_gemini",
                     "response_text": response.response,
                     "executed_at": response.timestamp
                 }
@@ -413,41 +479,9 @@ class OpenAIService:
                     )
             
         except Exception as e:
-            logger.error(f"Error storing query result: {e}")
-            raise
-    
-    async def advanced_citation_analysis(
-        self, 
-        user_id: str, 
-        query: str, 
-        response: ChatGPTResponse, 
-        target_brands: List[str],
-        competitor_brands: List[str] = None
-    ):
-        """
-        Perform advanced NLP citation analysis on ChatGPT response
-        """
-        try:
-            # Use the advanced NLP citation extractor
-            analysis = await nlp_citation_extractor.extract_citations(
-                response_text=response.response,
-                query=query,
-                platform="openai",
-                target_brands=target_brands,
-                competitor_brands=competitor_brands or []
-            )
-            
-            # Store the analysis
-            analysis_id = await nlp_citation_extractor.store_citation_analysis(user_id, analysis)
-            
-            logger.info(f"Advanced citation analysis completed for user {user_id}, analysis ID: {analysis_id}")
-            
-            return analysis
-            
-        except Exception as e:
-            logger.error(f"Error in advanced citation analysis: {e}")
+            logger.error(f"Error storing Gemini query result: {e}")
             raise
 
 
 # Global service instance
-openai_service = OpenAIService()
+google_gemini_service = GoogleGeminiService()
