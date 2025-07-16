@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # Main application
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://chatseo:chatseo123@db:5432/chatseo_dev
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=your-super-secret-jwt-key-development-only
+      - DEBUG=True
+      - ENVIRONMENT=development
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    networks:
+      - chatseo-network
+
+  # PostgreSQL database
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=chatseo_dev
+      - POSTGRES_USER=chatseo
+      - POSTGRES_PASSWORD=chatseo123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    restart: unless-stopped
+    networks:
+      - chatseo-network
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - chatseo-network
+
+  # Celery worker
+  worker:
+    build: .
+    command: celery -A app.celery.worker worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://chatseo:chatseo123@db:5432/chatseo_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    networks:
+      - chatseo-network
+
+  # Celery beat scheduler
+  beat:
+    build: .
+    command: celery -A app.celery.worker beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://chatseo:chatseo123@db:5432/chatseo_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    networks:
+      - chatseo-network
+
+  # Flower (Celery monitoring)
+  flower:
+    build: .
+    command: celery -A app.celery.worker flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    depends_on:
+      - redis
+    networks:
+      - chatseo-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  chatseo-network:
+    driver: bridge
