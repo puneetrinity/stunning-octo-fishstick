@@ -1,16 +1,18 @@
 from sqlalchemy import create_engine, MetaData
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from databases import Database
 from app.config import settings
 import asyncio
 
 
+# SQLAlchemy 2.0 Base class
+class Base(DeclarativeBase):
+    metadata = MetaData()
+
+
 # SQLAlchemy setup
 engine = create_engine(settings.database_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-metadata = MetaData()
-Base = declarative_base(metadata=metadata)
 
 # Async database connection
 database = Database(settings.database_url)

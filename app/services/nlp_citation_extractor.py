@@ -16,9 +16,9 @@ import numpy as np
 import spacy
 from spacy.matcher import Matcher
 from spacy.tokens import Doc, Span, Token
-from sentence_transformers import SentenceTransformer
-import torch
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
+# from sentence_transformers import SentenceTransformer
+# import torch
+# from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 
 # Database
 from app.database import db_manager
