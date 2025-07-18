@@ -47,8 +47,8 @@ class AnthropicService:
     """
     
     def __init__(self):
-        # Initialize Anthropic client
-        self.client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        # Initialize Anthropic client (lazy initialization)
+        self._client = None
         
         # Rate limiting settings
         self.rate_limit = {
@@ -94,11 +94,32 @@ class AnthropicService:
             ]
         }
     
+    @property
+    def client(self):
+        """Lazy initialization of Anthropic client"""
+        if self._client is None:
+            try:
+                self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+            except Exception as e:
+                logger.error(f"Failed to initialize Anthropic client: {e}")
+                self._client = None
+        return self._client
+    
     async def query_claude(self, query: str, model: str = "claude-3-sonnet-20240229") -> ClaudeResponse:
         """
         Send query to Claude and get response
         """
         try:
+            if self.client is None:
+                return ClaudeResponse(
+                    query=query,
+                    response="Anthropic client not available",
+                    model=model,
+                    usage={"input_tokens": 0, "output_tokens": 0},
+                    response_id="mock_response",
+                    created_at=datetime.utcnow()
+                )
+            
             response = await self.client.messages.create(
                 model=model,
                 max_tokens=1500,

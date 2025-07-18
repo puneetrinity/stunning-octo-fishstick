@@ -48,9 +48,8 @@ class GoogleGeminiService:
     """
     
     def __init__(self):
-        # Configure Gemini API
-        genai.configure(api_key=settings.google_api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        # Configure Gemini API (lazy initialization)
+        self._model = None
         
         # Rate limiting settings
         self.rate_limit = {
@@ -102,11 +101,33 @@ class GoogleGeminiService:
             ]
         }
     
+    @property
+    def model(self):
+        """Lazy initialization of Gemini model"""
+        if self._model is None:
+            try:
+                genai.configure(api_key=settings.google_api_key)
+                self._model = genai.GenerativeModel('gemini-pro')
+            except Exception as e:
+                logger.error(f"Failed to initialize Gemini model: {e}")
+                self._model = None
+        return self._model
+    
     async def query_gemini(self, query: str, model: str = "gemini-pro") -> GeminiResponse:
         """
         Send query to Gemini and get response
         """
         try:
+            if self.model is None:
+                return GeminiResponse(
+                    query=query,
+                    response="Gemini model not available",
+                    model=model,
+                    usage={"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
+                    response_id="mock_response",
+                    created_at=datetime.utcnow()
+                )
+            
             # Configure generation settings
             generation_config = genai.types.GenerationConfig(
                 temperature=0.7,
