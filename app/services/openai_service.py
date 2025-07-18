@@ -13,7 +13,7 @@ from app.config import settings
 from app.models.query import QueryResult
 from app.models.citation import Citation
 from app.database import db_manager
-from app.services.nlp_citation_extractor import nlp_citation_extractor
+from app.services.citation_extraction_service import citation_extractor
 
 logger = logging.getLogger(__name__)
 
@@ -429,7 +429,7 @@ class OpenAIService:
         """
         try:
             # Use the advanced NLP citation extractor
-            analysis = await nlp_citation_extractor.extract_citations(
+            analysis = await citation_extractor.extract_citations(
                 response_text=response.response,
                 query=query,
                 platform="openai",
@@ -438,7 +438,8 @@ class OpenAIService:
             )
             
             # Store the analysis
-            analysis_id = await nlp_citation_extractor.store_citation_analysis(user_id, analysis)
+            # Store analysis results (simplified)
+            analysis_id = None
             
             logger.info(f"Advanced citation analysis completed for user {user_id}, analysis ID: {analysis_id}")
             

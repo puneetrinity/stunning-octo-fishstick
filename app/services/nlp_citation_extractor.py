@@ -11,6 +11,7 @@ import re
 import json
 from collections import defaultdict
 import numpy as np
+import sys
 
 # NLP libraries
 import spacy
@@ -89,8 +90,14 @@ class AdvancedNLPCitationExtractor:
         try:
             self.nlp = spacy.load("en_core_web_lg")
         except OSError:
-            logger.warning("Large spaCy model not found, using smaller model")
-            self.nlp = spacy.load("en_core_web_sm")
+            logger.warning("Large spaCy model not found, trying smaller model")
+            try:
+                self.nlp = spacy.load("en_core_web_sm")
+            except OSError:
+                logger.warning("No spaCy model found, downloading en_core_web_sm")
+                import subprocess
+                subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
+                self.nlp = spacy.load("en_core_web_sm")
         
         # Initialize sentence transformer for semantic analysis
         self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
