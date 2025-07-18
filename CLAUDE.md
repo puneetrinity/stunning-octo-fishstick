@@ -1234,6 +1234,194 @@ kubectl apply -f k8s/
 kubectl rollout status deployment/chatseo-api
 ```
 
+## 🚀 **ML Model Enhancement Path**
+
+### **Current State: Simplified Models for MVP**
+Due to Railway deployment constraints, we're using simplified NLP models with reduced accuracy:
+
+#### **What We're Using (MVP)**
+```python
+current_models = {
+    'entity_recognition': {
+        'model': 'spacy_en_core_web_sm',
+        'accuracy': '75-80%',
+        'size': '12MB',
+        'features': 'Basic NER, POS tagging'
+    },
+    'sentiment_analysis': {
+        'model': 'rule_based_keywords',
+        'accuracy': '60-70%',
+        'size': '1MB',
+        'features': 'Basic positive/negative detection'
+    },
+    'citation_extraction': {
+        'model': 'pattern_matching',
+        'accuracy': '85-90%',
+        'features': 'Exact string matching, position tracking'
+    }
+}
+```
+
+#### **Impact on Features**
+```python
+feature_accuracy = {
+    'brand_mention_detection': '90%+ (minimal impact)',
+    'position_tracking': '100% (no impact)',
+    'basic_sentiment': '70% (moderate impact)',
+    'semantic_understanding': '0% (not available)',
+    'context_classification': '50% (significant impact)',
+    'entity_disambiguation': '40% (major impact)'
+}
+```
+
+### **Future State: Advanced ML Models**
+
+#### **Phase 1: Infrastructure Upgrade (Month 4-5)**
+```python
+infrastructure_upgrade = {
+    'timing': 'After reaching $15K MRR',
+    'platform': 'AWS EC2 / GCP Compute Engine',
+    'instance_type': 'GPU-enabled (p3.2xlarge or similar)',
+    'cost': '$500-1000/month',
+    'justification': 'Customer demand for higher accuracy'
+}
+```
+
+#### **Phase 2: Model Enhancement (Month 5-6)**
+```python
+enhanced_models = {
+    'entity_recognition': {
+        'model': 'dbmdz/bert-large-cased-finetuned-conll03-english',
+        'accuracy': '92-95%',
+        'size': '1.3GB',
+        'improvement': '+15% accuracy'
+    },
+    'sentiment_analysis': {
+        'model': 'cardiffnlp/twitter-roberta-base-sentiment-latest',
+        'accuracy': '92-95%',
+        'size': '500MB',
+        'improvement': '+25% accuracy, detects sarcasm/nuance'
+    },
+    'semantic_similarity': {
+        'model': 'sentence-transformers/all-MiniLM-L6-v2',
+        'accuracy': '85-90%',
+        'size': '80MB',
+        'improvement': 'Enables "Seattle company" = Amazon'
+    },
+    'context_classification': {
+        'model': 'facebook/bart-large-mnli',
+        'accuracy': '80-85%',
+        'size': '1.6GB',
+        'improvement': 'Understands recommendation intent'
+    }
+}
+```
+
+### **Implementation Roadmap**
+
+#### **Step 1: Validate Product-Market Fit (Current)**
+- Use simplified models on Railway
+- Focus on core value proposition
+- Gather customer feedback on accuracy needs
+- Track accuracy-related support tickets
+
+#### **Step 2: Infrastructure Migration (Month 4)**
+```python
+migration_plan = {
+    'trigger': '50+ paying customers OR accuracy complaints',
+    'steps': [
+        '1. Provision GPU-enabled instance on AWS/GCP',
+        '2. Install CUDA and ML dependencies',
+        '3. Deploy enhanced nlp_citation_extractor',
+        '4. A/B test accuracy improvements',
+        '5. Gradual rollout to all customers'
+    ],
+    'estimated_time': '1 week',
+    'cost': '$2000 one-time + $500/month ongoing'
+}
+```
+
+#### **Step 3: Premium Feature Enablement (Month 5-6)**
+```python
+premium_features = {
+    'semantic_search': {
+        'requires': 'sentence-transformers',
+        'value': 'Find all variations of brand mentions',
+        'pricing_impact': '+$200/month per customer'
+    },
+    'advanced_sentiment': {
+        'requires': 'roberta-sentiment',
+        'value': 'Nuanced sentiment including sarcasm',
+        'pricing_impact': '+$150/month per customer'
+    },
+    'context_intelligence': {
+        'requires': 'bart-mnli',
+        'value': 'Understand recommendation context',
+        'pricing_impact': '+$250/month per customer'
+    }
+}
+```
+
+### **Business Justification**
+
+#### **ROI Calculation**
+```python
+ml_enhancement_roi = {
+    'cost': {
+        'infrastructure': '$500/month',
+        'development': '$5000 one-time',
+        'total_first_year': '$11,000'
+    },
+    'revenue_impact': {
+        'reduced_churn': '5% reduction = $3000/month',
+        'premium_upsell': '20% of customers = $4000/month',
+        'new_enterprise': '5 customers = $8000/month',
+        'total_monthly': '$15,000/month'
+    },
+    'payback_period': '< 1 month',
+    'annual_roi': '1500%'
+}
+```
+
+#### **Customer Value**
+- **30-40% accuracy improvement** across all NLP tasks
+- **New capabilities**: Semantic search, nuanced sentiment, context understanding
+- **Enterprise readiness**: Required for Fortune 500 customers
+- **Competitive advantage**: Unique insights competitors can't match
+
+### **Technical Architecture**
+
+#### **Microservice Approach**
+```python
+ml_architecture = {
+    'simplified_service': {
+        'deployment': 'Railway/Heroku',
+        'models': 'Basic spaCy',
+        'use_case': 'SMB customers, basic monitoring'
+    },
+    'advanced_service': {
+        'deployment': 'AWS/GCP with GPU',
+        'models': 'Transformers, BERT, RoBERTa',
+        'use_case': 'Enterprise, premium features'
+    },
+    'routing': 'Customer tier determines which service'
+}
+```
+
+### **Migration Benefits**
+
+#### **Immediate Benefits**
+1. **Semantic Understanding**: Detect "the Seattle company" = Amazon
+2. **Context Intelligence**: Understand recommendation vs criticism
+3. **Multilingual Support**: Analyze non-English responses
+4. **Entity Disambiguation**: Apple (company) vs apple (fruit)
+
+#### **Long-term Benefits**
+1. **Custom Model Training**: Fine-tune on customer data
+2. **Real-time Learning**: Improve accuracy over time
+3. **Industry-specific Models**: Specialized for verticals
+4. **Competitive Moat**: Proprietary model advantages
+
 ## Success Metrics
 
 ### Month 2 (MVP)
