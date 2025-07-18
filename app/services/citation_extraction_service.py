@@ -774,3 +774,4 @@ class CitationExtractionService:
 
 # Global service instance
 citation_extraction_service = CitationExtractionService()
+citation_extractor = citation_extraction_service  # Alias for compatibility
