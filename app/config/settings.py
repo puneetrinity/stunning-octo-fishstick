@@ -12,39 +12,39 @@ class Settings(BaseSettings):
     environment: str = Field(default="production", env="ENVIRONMENT")
     
     # Database
-    database_url: str = Field(env="DATABASE_URL")
-    database_test_url: Optional[str] = Field(env="DATABASE_TEST_URL")
+    database_url: str = Field(default="postgresql://localhost/chatseo_dev", env="DATABASE_URL")
+    database_test_url: Optional[str] = Field(default=None, env="DATABASE_TEST_URL")
     
     # Redis
-    redis_url: str = Field(env="REDIS_URL")
+    redis_url: str = Field(default="redis://localhost:6379", env="REDIS_URL")
     
     # JWT
-    jwt_secret_key: str = Field(env="JWT_SECRET_KEY")
+    jwt_secret_key: str = Field(default="your-secret-key-change-in-production", env="JWT_SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", env="JWT_ALGORITHM")
     jwt_expiration_hours: int = Field(default=24, env="JWT_EXPIRATION_HOURS")
     
     # API Keys
-    openai_api_key: str = Field(env="OPENAI_API_KEY")
-    anthropic_api_key: str = Field(env="ANTHROPIC_API_KEY")
-    google_api_key: str = Field(env="GOOGLE_API_KEY")
+    openai_api_key: str = Field(default="", env="OPENAI_API_KEY")
+    anthropic_api_key: str = Field(default="", env="ANTHROPIC_API_KEY")
+    google_api_key: str = Field(default="", env="GOOGLE_API_KEY")
     
     # Email
-    smtp_host: str = Field(env="SMTP_HOST")
+    smtp_host: str = Field(default="localhost", env="SMTP_HOST")
     smtp_port: int = Field(default=587, env="SMTP_PORT")
-    smtp_username: str = Field(env="SMTP_USERNAME")
-    smtp_password: str = Field(env="SMTP_PASSWORD")
+    smtp_username: str = Field(default="", env="SMTP_USERNAME")
+    smtp_password: str = Field(default="", env="SMTP_PASSWORD")
     
     # Stripe
-    stripe_secret_key: str = Field(env="STRIPE_SECRET_KEY")
-    stripe_webhook_secret: str = Field(env="STRIPE_WEBHOOK_SECRET")
+    stripe_secret_key: str = Field(default="", env="STRIPE_SECRET_KEY")
+    stripe_webhook_secret: str = Field(default="", env="STRIPE_WEBHOOK_SECRET")
     
     # Rate Limiting
     rate_limit_requests_per_minute: int = Field(default=60, env="RATE_LIMIT_REQUESTS_PER_MINUTE")
     rate_limit_burst: int = Field(default=100, env="RATE_LIMIT_BURST")
     
     # Celery
-    celery_broker_url: str = Field(env="CELERY_BROKER_URL")
-    celery_result_backend: str = Field(env="CELERY_RESULT_BACKEND")
+    celery_broker_url: str = Field(default="redis://localhost:6379", env="CELERY_BROKER_URL")
+    celery_result_backend: str = Field(default="redis://localhost:6379", env="CELERY_RESULT_BACKEND")
     
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
