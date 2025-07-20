@@ -1,0 +1,15 @@
+[variables]
+NODE_ENV = "production"
+NEXT_PUBLIC_API_URL = "https://stunning-octo-fishstick-production.up.railway.app"
+
+[phases.build]
+cmds = [
+  "npm ci",
+  "npm run build"
+]
+
+[phases.start]
+cmd = "npm start"
+
+[start]
+cmd = "npm start"
