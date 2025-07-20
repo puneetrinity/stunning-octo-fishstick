@@ -11,6 +11,15 @@ import os
 from app.config import settings
 from app.database import connect_db, disconnect_db
 
+# Configure for Railway deployment
+try:
+    from app.config.railway_config import configure_for_railway
+    railway_config = configure_for_railway()
+    logger = logging.getLogger(__name__)
+    logger.info(f"Railway configuration applied: {railway_config}")
+except ImportError:
+    pass
+
 
 # Configure logging
 logging.basicConfig(
@@ -25,15 +34,29 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
     logger.info("Starting up ChatSEO Platform...")
-    await connect_db()
-    logger.info("Database connected successfully")
+    
+    # Check if database should be skipped (for Railway without database)
+    if os.getenv("SKIP_DATABASE_INIT") != "true":
+        try:
+            await connect_db()
+            logger.info("Database connected successfully")
+        except Exception as e:
+            logger.error(f"Failed to connect to database: {e}")
+            # Continue without database for demo/testing purposes
+            logger.warning("Running without database connection - some features may be limited")
+    else:
+        logger.info("Database initialization skipped (SKIP_DATABASE_INIT=true)")
     
     yield
     
     # Shutdown
     logger.info("Shutting down ChatSEO Platform...")
-    await disconnect_db()
-    logger.info("Database disconnected")
+    if os.getenv("SKIP_DATABASE_INIT") != "true":
+        try:
+            await disconnect_db()
+            logger.info("Database disconnected")
+        except Exception as e:
+            logger.error(f"Error disconnecting database: {e}")
 
 
 # Create FastAPI application

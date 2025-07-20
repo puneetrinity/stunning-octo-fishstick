@@ -25,12 +25,27 @@ async def get_database():
 
 async def connect_db():
     """Connect to database on startup"""
-    await database.connect()
+    try:
+        await database.connect()
+        # Test the connection
+        await database.fetch_one("SELECT 1")
+        return True
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Database connection failed: {e}")
+        raise
 
 
 async def disconnect_db():
     """Disconnect from database on shutdown"""
-    await database.disconnect()
+    try:
+        if database.is_connected:
+            await database.disconnect()
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error during database disconnect: {e}")
 
 
 # Database session dependency
