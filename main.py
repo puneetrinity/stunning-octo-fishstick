@@ -80,9 +80,17 @@ app.add_middleware(
 
 # Add trusted host middleware for production
 if not settings.debug:
+    # Allow Railway domains and your custom domains
+    allowed_hosts = [
+        "yourdomain.com", 
+        "*.yourdomain.com",
+        "*.up.railway.app",  # Railway domains
+        "*.railway.app",     # Railway custom domains
+        "stunning-octo-fishstick-production.up.railway.app"  # Your specific domain
+    ]
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["yourdomain.com", "*.yourdomain.com"]
+        allowed_hosts=allowed_hosts
     )
 
 
