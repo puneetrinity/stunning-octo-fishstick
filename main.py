@@ -170,7 +170,7 @@ async def root():
 
 
 # Import and include routers
-from app.api.v1 import auth, brands, clients, roi, pricing, monitoring, review_sites, citations, authority_sources
+from app.api.v1 import auth, brands, clients, roi, pricing, monitoring, review_sites, citations, authority_sources, debug
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(brands.router, prefix="/api/v1/brands", tags=["Brands"])
@@ -181,6 +181,9 @@ app.include_router(monitoring.router, prefix="/api/v1/monitoring", tags=["Monito
 app.include_router(review_sites.router, prefix="/api/v1/review-sites", tags=["Review Sites"])
 app.include_router(citations.router, prefix="/api/v1/citations", tags=["Citations"])
 app.include_router(authority_sources.router, prefix="/api/v1/authority-sources", tags=["Authority Sources"])
+
+# Debug endpoints (only in development or for troubleshooting)
+app.include_router(debug.router, prefix="/api/v1/debug", tags=["Debug"])
 
 
 if __name__ == "__main__":
